@@ -1,0 +1,51 @@
+# https://docs.docker.com/compose/
+version: "3"
+
+services:
+  web:
+    build: .
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?sslmode=prefer&user=postgres&password=${POSTGRES_PASSWORD}
+      SPRING_PROFILE: development
+    ports:
+      - "8080:8080"
+
+  postgres:
+    image: postgres:14-alpine # https://hub.docker.com/_/postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgresdata:/var/lib/postgresql/data/pgdata
+
+  keycloak-db:
+    image: postgres:14-alpine
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_DB: keycloak
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - keycloakdata:/var/lib/postgresql/data/pgdata
+
+  keycloak: # https://hub.docker.com/r/jboss/keycloak/
+    image: jboss/keycloak
+    restart: always
+    environment:
+      KEYCLOAK_USER: ${KEYCLOAK_USER}
+      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
+      DB_VENDOR: postgres
+      DB_USER: keycloak
+      DB_PASSWORD: keycloak
+      DB_ADDR: keycloak-db
+    ports:
+      - '127.0.0.1:8083:8080'
+
+volumes:
+  postgresdata: {}
+  keycloakdata: {}
